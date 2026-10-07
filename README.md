@@ -56,7 +56,7 @@ To flash from a Mac: `cd esphome && ../.esphome-venv/bin/esphome run wine-rack-e
 
 ## 3. Install the add-on
 
-1. Push this folder to a GitHub repo and set its URL in `repository.yaml` and `wine_cellar/config.yaml`.
+1. Use the repository URL https://github.com/cwalk88/WineApp (the repo must be public).
 2. In HA go to **Settings → Add-ons → Add-on Store → ⋮ → Repositories** and add the repo URL. Alternatively, copy `wine_cellar/` into `/addons/` on the HA host (Samba or SSH add-on) and it appears under **Local add-ons**.
 3. Install **Wine Cellar**. In **Configuration**, set:
    - `anthropic_api_key`: get a key at https://console.anthropic.com

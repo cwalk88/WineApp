@@ -2,7 +2,7 @@ name: Wine Cellar
 version: "0.1.0"
 slug: wine_cellar
 description: Photograph and catalogue your wine with Claude, and light up its slot on an LED wine rack
-url: https://github.com/YOUR_GITHUB_USER/wine-cellar
+url: https://github.com/cwalk88/WineApp
 arch:
   - aarch64
   - amd64
