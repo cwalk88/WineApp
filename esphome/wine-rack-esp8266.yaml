@@ -1,0 +1,153 @@
+# ESPHome firmware for the wine rack LEDs (ESP8266 + WS2812B strip).
+# ESP8266 version of wine-rack.yaml (NodeMCU / Wemos D1 mini, 4 MB flash).
+#
+# Wiring: strip DIN <- 330 ohm <- GPIO3 (the pin labelled RX). GPIO3 is the
+# only pin the ESP8266 can drive with DMA, which keeps the LEDs flicker-free
+# alongside Wi-Fi. Serial logging is turned off because it shares that pin;
+# view logs over Wi-Fi instead. Unplug the strip's data wire if a USB flash fails.
+#
+# The Wine Cellar add-on calls two Home Assistant actions this device exposes:
+#   esphome.wine_rack_locate  {leds: [..], red, green, blue, pulse, seconds, brightness}
+#   esphome.wine_rack_clear
+# (The prefix comes from the device name: "wine-rack" -> "wine_rack". If you
+#  rename the device, set esphome_device in the add-on options to match.)
+#
+# Needs ESPHome 2024.6 or newer ("actions" under api).
+
+substitutions:
+  name: wine-rack
+  friendly_name: Wine Rack
+  led_pin: GPIO3        # RX pin - required for the DMA method below
+  num_leds: "300"       # total LEDs on the strip, across every rack chained on it
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+esp8266:
+  board: nodemcuv2
+
+logger:
+  baud_rate: 0          # UART0 shares GPIO3 with the LED strip
+
+api:
+  encryption:
+    key: !secret wine_rack_api_key
+  actions:
+    - action: locate
+      variables:
+        leds: int[]
+        red: int
+        green: int
+        blue: int
+        pulse: bool
+        seconds: int
+        brightness: int
+      then:
+        - lambda: |-
+            id(locate_leds) = leds;
+            id(locate_r) = red;
+            id(locate_g) = green;
+            id(locate_b) = blue;
+            id(locate_pulse) = pulse;
+        - light.turn_on:
+            id: rack_leds
+            brightness: !lambda "return std::max(1, std::min(100, brightness)) / 100.0f;"
+            effect: "Wine Locate"
+        # Failsafe: switch off even if Home Assistant goes away.
+        - if:
+            condition:
+              lambda: "return seconds > 0;"
+            then:
+              - script.execute:
+                  id: auto_off
+                  seconds: !lambda "return seconds;"
+            else:
+              - script.stop: auto_off
+    - action: clear
+      then:
+        - script.stop: auto_off
+        - light.turn_off: rack_leds
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  # If the saved network can't be reached, the board starts a "Wine-Rack"
+  # hotspot; join it and pick your Wi-Fi in the page that opens.
+  ap:
+    ssid: "Wine-Rack"
+    password: !secret ap_password
+
+captive_portal:
+
+globals:
+  - id: locate_leds
+    type: std::vector<int32_t>
+    restore_value: no
+  - id: locate_r
+    type: int
+    initial_value: "255"
+  - id: locate_g
+    type: int
+    initial_value: "176"
+  - id: locate_b
+    type: int
+    initial_value: "0"
+  - id: locate_pulse
+    type: bool
+    initial_value: "true"
+
+script:
+  - id: auto_off
+    mode: restart
+    parameters:
+      seconds: int
+    then:
+      - delay: !lambda "return seconds * 1000;"
+      - light.turn_off: rack_leds
+
+light:
+  - platform: neopixelbus
+    id: rack_leds
+    name: "Wine Rack LEDs"
+    pin: ${led_pin}
+    num_leds: ${num_leds}
+    type: GRB
+    variant: WS2812X
+    method: esp8266_dma
+    restore_mode: ALWAYS_OFF
+    default_transition_length: 0s
+    effects:
+      # Lights only the requested LEDs, everything else stays dark.
+      - addressable_lambda:
+          name: "Wine Locate"
+          update_interval: 30ms
+          lambda: |-
+            float k = 1.0f;
+            if (id(locate_pulse)) {
+              k = 0.35f + 0.65f * (0.5f + 0.5f * sinf(millis() / 280.0f));
+            }
+            Color c((uint8_t) (id(locate_r) * k), (uint8_t) (id(locate_g) * k), (uint8_t) (id(locate_b) * k));
+            it.all() = Color::BLACK;
+            for (int32_t i : id(locate_leds)) {
+              if (i >= 0 && i < it.size()) it[i] = c;
+            }
+      - addressable_rainbow:
+          name: "Rainbow"
+
+# The FLASH button on NodeMCU / D1 mini boards switches the lights off.
+binary_sensor:
+  - platform: gpio
+    id: boot_button
+    name: "Lights off button"
+    pin:
+      number: GPIO0
+      inverted: true
+      mode: INPUT_PULLUP
+    on_press:
+      - script.stop: auto_off
+      - light.turn_off: rack_leds

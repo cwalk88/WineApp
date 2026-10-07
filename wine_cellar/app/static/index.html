@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Wine Cellar</title>
+  <link rel="stylesheet" href="static/styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v5.2c0 1.4.6 2.3 1.4 3.3.9 1.1 1.6 2.4 1.6 4.5V21a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-6c0-2.1.7-3.4 1.6-4.5.8-1 1.4-1.9 1.4-3.3V2Zm1.5 1.5v3.7c0 1.9-.8 3.2-1.7 4.3-.8 1-1.3 1.9-1.3 3.5v5.5h9V15c0-1.6-.5-2.5-1.3-3.5-.9-1.1-1.7-2.4-1.7-4.3V3.5h-3Z"/></svg>
+      <div>
+        <h1>Wine Cellar</h1>
+        <p id="summary">Loading…</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span id="led-chip" class="chip" title="LED status"></span>
+      <button id="lights-off" class="btn ghost small" hidden>Lights off</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button data-view="cellar" class="active">Cellar</button>
+    <button data-view="add">Check in</button>
+    <button data-view="pair">Sommelier</button>
+    <button data-view="racks">Racks</button>
+    <button data-view="history">History</button>
+  </nav>
+
+  <main>
+    <!-- CELLAR -->
+    <section id="view-cellar" class="view active">
+      <div class="search-row">
+        <input id="search" type="search" placeholder="Search name, grape, region, food…" autocomplete="off">
+        <button id="light-matches" class="btn" hidden>Light matches</button>
+      </div>
+      <div id="style-filters" class="filters"></div>
+      <div id="racks-visual" class="racks-visual"></div>
+      <h2 class="section-title">Bottles <span id="bottle-count" class="muted"></span></h2>
+      <div id="bottle-list" class="bottle-list"></div>
+    </section>
+
+    <!-- CHECK IN -->
+    <section id="view-add" class="view">
+      <div id="add-step-photo" class="card center">
+        <h2>Photograph the label</h2>
+        <p class="muted">Claude will identify the wine and suggest what it goes with.</p>
+        <label class="btn primary big">
+          <input id="photo-input" type="file" accept="image/*" capture="environment" hidden>
+          Take or choose photo
+        </label>
+        <button id="manual-entry" class="btn ghost">Enter details manually</button>
+      </div>
+
+      <div id="add-step-analyzing" class="card center" hidden>
+        <img id="analyzing-preview" class="preview" alt="">
+        <div class="spinner"></div>
+        <p>Reading the label…</p>
+      </div>
+
+      <form id="add-form" class="card" hidden>
+        <div class="form-head">
+          <img id="form-photo" class="thumb-lg" alt="" hidden>
+          <div>
+            <h2>Check in bottle</h2>
+            <p id="confidence" class="muted"></p>
+          </div>
+        </div>
+        <p id="analyze-error" class="error" hidden></p>
+        <div class="grid2">
+          <label class="span2">Wine<input name="name" required></label>
+          <label>Producer<input name="producer"></label>
+          <label>Vintage<input name="vintage" type="number" min="1800" max="2100" placeholder="NV"></label>
+          <label>Style
+            <select name="style">
+              <option value="red">Red</option><option value="white">White</option>
+              <option value="rose">Rosé</option><option value="sparkling">Sparkling</option>
+              <option value="dessert">Dessert</option><option value="fortified">Fortified</option>
+              <option value="orange">Orange</option>
+            </select>
+          </label>
+          <label>Grapes<input name="grapes" placeholder="comma separated"></label>
+          <label>Region<input name="region"></label>
+          <label>Country<input name="country"></label>
+          <label>Drink from<input name="drink_from" type="number" min="1900" max="2200"></label>
+          <label>Drink until<input name="drink_until" type="number" min="1900" max="2200"></label>
+          <label class="span2">Goes with<input name="food_pairings" placeholder="comma separated"></label>
+          <label class="span2">Pairing notes<textarea name="pairing_summary" rows="2"></textarea></label>
+          <label class="span2">Tasting notes<textarea name="tasting_notes" rows="2"></textarea></label>
+          <label>Serve at (°C)<input name="serving_temp_c"></label>
+          <label>Decant (min)<input name="decant_minutes" type="number" min="0" max="600"></label>
+          <label class="span2">My notes<textarea name="notes" rows="2" placeholder="Where bought, price, occasion…"></textarea></label>
+        </div>
+
+        <div class="placement">
+          <div class="placement-head">
+            <h3>Where does it go?</h3>
+            <label class="qty">Bottles <input name="quantity" type="number" min="1" max="48" value="1"></label>
+          </div>
+          <p class="muted" id="slot-hint">Next free slot is chosen automatically. Tap an empty slot to pick one yourself.</p>
+          <div id="slot-picker" class="racks-visual compact"></div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" id="add-cancel" class="btn ghost">Cancel</button>
+          <button type="submit" class="btn primary">Check in &amp; light slot</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- SOMMELIER -->
+    <section id="view-pair" class="view">
+      <form id="pair-form" class="card">
+        <h2>What are you eating?</h2>
+        <p class="muted">Claude picks from what's in your rack and lights the bottles up.</p>
+        <textarea id="meal" rows="2" placeholder="e.g. Sunday roast lamb with rosemary potatoes"></textarea>
+        <button class="btn primary" type="submit">Suggest a bottle</button>
+      </form>
+      <div id="pair-result"></div>
+    </section>
+
+    <!-- RACKS -->
+    <section id="view-racks" class="view">
+      <div class="card">
+        <h2>Racks &amp; LED wiring</h2>
+        <p class="muted">Add a rack for each section of shelving. Racks chain along one LED strip, so a new rack starts after the last LED of the previous one. Change rows or columns at any time to expand capacity.</p>
+        <button id="add-rack" class="btn primary">Add rack</button>
+      </div>
+      <div id="rack-editors"></div>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="view-history" class="view">
+      <h2 class="section-title">Checked out</h2>
+      <div id="out-list" class="bottle-list"></div>
+      <h2 class="section-title">Activity</h2>
+      <ul id="events" class="events"></ul>
+    </section>
+  </main>
+
+  <dialog id="bottle-dialog"></dialog>
+  <div id="toast" class="toast" hidden></div>
+
+  <template id="rack-editor-tpl">
+    <form class="card rack-editor">
+      <div class="grid3">
+        <label class="span3">Name<input name="name" required maxlength="60"></label>
+        <label>Rows<input name="rows" type="number" min="1" max="100" required></label>
+        <label>Columns<input name="cols" type="number" min="1" max="100" required></label>
+        <label>LEDs per slot<input name="leds_per_slot" type="number" min="1" max="20" required></label>
+        <label>First LED #<input name="led_start" type="number" min="0" placeholder="auto"></label>
+        <label>Strip starts at
+          <select name="start_corner">
+            <option value="top_left">Top left</option><option value="top_right">Top right</option>
+            <option value="bottom_left">Bottom left</option><option value="bottom_right">Bottom right</option>
+          </select>
+        </label>
+        <label>Strip runs
+          <select name="orientation">
+            <option value="horizontal">Along rows</option><option value="vertical">Along columns</option>
+          </select>
+        </label>
+        <label class="check"><input name="serpentine" type="checkbox"> Zig-zag wiring</label>
+        <label>Unused LEDs per bend<input name="leds_between_runs" type="number" min="0" max="50"></label>
+        <p class="muted led-range"></p>
+      </div>
+      <div class="led-map"></div>
+      <div class="form-actions">
+        <button type="button" class="btn danger ghost" data-act="delete">Delete</button>
+        <button type="button" class="btn ghost" data-act="test">Light whole rack</button>
+        <button type="submit" class="btn primary">Save</button>
+      </div>
+    </form>
+  </template>
+
+  <script src="static/app.js"></script>
+</body>
+</html>

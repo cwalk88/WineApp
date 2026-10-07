@@ -1,0 +1,8 @@
+.venv/
+.devdata/
+__pycache__/
+.pytest_cache/
+esphome/secrets.yaml
+esphome/.esphome/
+.esphome-venv/
+.DS_Store
