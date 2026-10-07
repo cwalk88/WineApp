@@ -8,6 +8,7 @@ Drivers
 """
 
 import logging
+import re
 import threading
 from dataclasses import dataclass, field
 
@@ -39,11 +40,20 @@ class EsphomeDriver(LedDriver):
     def __init__(self, settings: Settings):
         if not settings.ha_url or not settings.ha_token:
             raise RuntimeError("ESPHome driver needs Home Assistant API access (HA_URL / HA_TOKEN)")
-        self.base = f"{settings.ha_url}/services/esphome/{settings.esphome_device}"
+        # HA registers ESPHome actions under the device name with anything that
+        # isn't a letter or digit turned into "_" (wine-rack -> wine_rack).
+        device = re.sub(r"[^a-z0-9]+", "_", settings.esphome_device.strip().lower()).strip("_")
+        self.service = f"esphome.{device}"
+        self.base = f"{settings.ha_url}/services/esphome/{device}"
         self.headers = {"Authorization": f"Bearer {settings.ha_token}"}
 
     def _call(self, action: str, payload: dict) -> None:
         r = httpx.post(f"{self.base}_{action}", json=payload, headers=self.headers, timeout=10)
+        if r.status_code == 400:
+            raise RuntimeError(
+                f"Home Assistant has no action {self.service}_{action}. Check the ESPHome device "
+                f"is adopted in HA and that esphome_device matches its name. ({r.text.strip()[:200]})"
+            )
         r.raise_for_status()
 
     def show(self, leds, color, pulse, seconds, brightness):
