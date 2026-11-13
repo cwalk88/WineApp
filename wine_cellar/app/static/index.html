@@ -4,11 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Wine Cellar</title>
-  <link rel="stylesheet" href="static/styles.css">
+  <meta name="color-scheme" content="light dark">
+  <link rel="preload" href="static/fonts/montserrat-latin-500.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="static/styles.css?v=0.1.2">
 </head>
 <body>
   <header class="top">
     <div class="brand">
+      <a id="back-home" class="back" href="/home-origami/home#popup_wine_cellar" target="_top" title="Back to Home" aria-label="Back to Home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.4 5.4 14 4l-8 8 8 8 1.4-1.4L8.8 12z"/></svg>
+      </a>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v5.2c0 1.4.6 2.3 1.4 3.3.9 1.1 1.6 2.4 1.6 4.5V21a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-6c0-2.1.7-3.4 1.6-4.5.8-1 1.4-1.9 1.4-3.3V2Zm1.5 1.5v3.7c0 1.9-.8 3.2-1.7 4.3-.8 1-1.3 1.9-1.3 3.5v5.5h9V15c0-1.6-.5-2.5-1.3-3.5-.9-1.1-1.7-2.4-1.7-4.3V3.5h-3Z"/></svg>
       <div>
         <h1>Wine Cellar</h1>
@@ -176,5 +181,6 @@
   </template>
 
   <script src="static/app.js"></script>
+  <script src="static/back.js"></script>
 </body>
 </html>
